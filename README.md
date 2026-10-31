@@ -2,7 +2,7 @@
 
 **A local-first, multiplayer canvas of typed nodes and edges that compiles into a validated, dependency-ordered implementation plan.**
 
-> Status: **pre-alpha, design phase.** Nothing here runs yet. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> Status: **pre-alpha.** Skeleton (M0) built and passing. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for milestones.
 
 Sketch a system on a shared canvas: features, services, risks, tasks, and the dependencies between them. Edit with teammates in real time, or alone on a bad connection; everything merges when you reconnect. Then press **Extract** and Scaffold turns the graph into an ordered task plan.
 

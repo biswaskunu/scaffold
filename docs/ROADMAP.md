@@ -6,7 +6,7 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
 ---
 
-## M0: Skeleton `[ ]`
+## M0: Skeleton `[x]`
 
 **Goal:** a workspace that builds, lints, tests, and runs in CI.
 
@@ -15,9 +15,9 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 - Server starts and echoes over a WebSocket at `/ws/:room_id`
 
 **Acceptance**
-- [ ] `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test --workspace` pass in CI
-- [ ] Client installs, typechecks, and builds
-- [ ] A test connects to the WebSocket and gets an echo
+- [x] `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test --workspace` pass in CI
+- [x] Client installs, typechecks, and builds
+- [x] A test connects to the WebSocket and gets an echo
 
 ---
 
