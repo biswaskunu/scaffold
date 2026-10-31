@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "scaffold-graph",
+  "scaffold-ai",
+  "scaffold-server",
+]
+
+[workspace.dependencies]
