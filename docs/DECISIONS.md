@@ -64,6 +64,20 @@ Template:
 - **Decision:** Use binary frames with a one-byte type tag and a versioned JSON payload for control messages. Encode the room id and client version vector in `Hello`; return missing update bytes and the server version vector in `SyncReply`; carry raw Loro update bytes in `Update`; use structured code/message data in `Error`. Reject unknown message types, malformed frames, oversized frames, and protocol-version mismatches. The server keeps one in-memory Loro document per room and broadcasts accepted updates to the other room peers.
 - **Consequences:** Control frame structure is inspectable and can evolve under an explicit protocol version; update payloads stay in Loro's binary format. JSON adds small control-frame overhead. Room state is lost on server restart until M2 persistence.
 
+## ADR-008: Loro dependency pin and ephemeral presence relay
+- **Status:** accepted
+- **Date:** 2026-11-01
+- **Context:** We need a pinned version of the `loro` Rust crate and a resolution for how presence is handled before M4.
+- **Decision:** Pin `loro = "1.17.1"` in workspace dependencies and scaffold-server. For presence (resolving OD-4), relay plain messages via the `0x04` presence frame on the WebSocket, avoiding premature dependency on Loro's ephemeral API.
+- **Consequences:** Stable, reproducible builds with Loro 1.17.1. Presence is decoupled from CRDT history and ready for M4.
+
+## ADR-009: Client framework and canvas rendering (React Flow)
+- **Status:** accepted
+- **Date:** 2026-11-01
+- **Context:** Selecting a web framework and canvas approach for the TypeScript client (resolving OD-2 and OD-3).
+- **Decision:** Use React with React Flow (xyflow) for the client web UI.
+- **Consequences:** Mature node-graph library with built-in node dragging, connection handles, and zoom/pan; highly reliable with coding agents; lets us focus on the Rust/CRDT sync experience rather than building canvas primitives from scratch.
+
 ---
 
 ## Open decisions
@@ -71,8 +85,5 @@ Template:
 | # | Question | Notes |
 |---|---|---|
 | OD-1 | Default LLM provider for demos | Undecided. Candidates: local Ollama model, or a free-tier OpenAI-compatible API. Check current limits before choosing. |
-| OD-2 | Client framework | React, Svelte, or Solid. Pick based on the best node-graph/canvas library available and how well the agent handles it. |
-| OD-3 | Canvas rendering approach | Existing node-graph library vs custom SVG/Canvas. Library is faster to ship; custom gives control over presence rendering. |
-| OD-4 | Presence transport | Use Loro's built-in ephemeral support if sufficient, otherwise plain relayed messages. Decide during M4. |
 | OD-5 | Node body type | Plain string (v1 default) vs Loro text container. Revisit if collaborative text editing is wanted. |
 | OD-6 | License | MIT proposed. |
