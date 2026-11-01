@@ -16,7 +16,7 @@ async fn test_persistence_restart_and_reload() {
 
     let room = rooms.get_or_create("room-1").await;
     let _ = room.lock().await;
-    let mut doc = LoroDoc::new();
+    let doc = LoroDoc::new();
     doc.set_peer_id(1).unwrap();
     doc.get_map("root").insert("key1", "value1").unwrap();
     let bytes = doc
@@ -83,7 +83,7 @@ async fn test_compaction_and_reload() {
 
     let room = rooms.get_or_create("room-2").await;
     let _ = room.lock().await;
-    let mut doc = LoroDoc::new();
+    let doc = LoroDoc::new();
     doc.set_peer_id(1).unwrap();
     doc.get_map("root").insert("item", "100").unwrap();
     let bytes = doc
