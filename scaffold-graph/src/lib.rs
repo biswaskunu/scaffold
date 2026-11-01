@@ -525,47 +525,90 @@ mod tests {
     }
 
     #[test]
-    fn test_canonical_serialization() {
-        let mut g = Graph::new();
+    fn test_graph_builder_warnings() {
         let n1 = Node {
             id: "n1".to_string(),
             r#type: NodeType::Feature,
-            title: "First".to_string(),
+            title: "One".to_string(),
             body: "".to_string(),
             x: 0.0,
             y: 0.0,
             status: None,
             effort: None,
             created_by: "test".to_string(),
+            ai_generated: false,
+            source_node: None,
+        };
+        let nodes = vec![n1.clone()];
+        let edges = vec![
+            Edge {
+                id: "self_edge".to_string(),
+                from: "n1".to_string(),
+                to: "n1".to_string(),
+                kind: EdgeKind::DependsOn,
+            },
+            Edge {
+                id: "dangling_edge".to_string(),
+                from: "n1".to_string(),
+                to: "missing".to_string(),
+                kind: EdgeKind::DependsOn,
+            },
+            Edge {
+                id: "dup1".to_string(),
+                from: "n1".to_string(),
+                to: "n1".to_string(), // self edge filtered
+                kind: EdgeKind::DependsOn,
+            },
+        ];
+
+        let built = Graph::build(nodes, edges);
+        assert_eq!(built.graph.nodes.len(), 1);
+        assert!(built.graph.edges.is_empty());
+        assert_eq!(built.warnings.len(), 3);
+    }
+
+    #[test]
+    fn test_golden_canonical_serialization() {
+        let n1 = Node {
+            id: "beta".to_string(),
+            r#type: NodeType::Task,
+            title: "Beta Task".to_string(),
+            body: "Do beta".to_string(),
+            x: 10.0,
+            y: 20.0,
+            status: Some(NodeStatus::Todo),
+            effort: Some(5.0),
+            created_by: "alice".to_string(),
             ai_generated: false,
             source_node: None,
         };
         let n2 = Node {
-            id: "n2".to_string(),
+            id: "alpha".to_string(),
             r#type: NodeType::Feature,
-            title: "Second".to_string(),
-            body: "".to_string(),
+            title: "Alpha Feature".to_string(),
+            body: "Do alpha".to_string(),
             x: 0.0,
             y: 0.0,
-            status: None,
+            status: Some(NodeStatus::Done),
             effort: None,
-            created_by: "test".to_string(),
+            created_by: "alice".to_string(),
             ai_generated: false,
             source_node: None,
         };
-        g.add_node(n1.clone());
-        g.add_node(n2.clone());
-        g.add_edge(Edge {
-            id: "e1".to_string(),
-            from: "n1".to_string(),
-            to: "n2".to_string(),
-            kind: EdgeKind::DependsOn,
-        });
+        let built = Graph::build(vec![n1, n2], vec![
+            Edge {
+                id: "e1".to_string(),
+                from: "alpha".to_string(),
+                to: "beta".to_string(),
+                kind: EdgeKind::DependsOn,
+            }
+        ]);
 
-        let canonical = g.canonical();
-        let json = serde_json::to_string(&canonical).unwrap();
-        assert!(json.contains("\"from\":\"n1\""));
-        assert!(json.contains("\"to\":\"n2\""));
-        assert!(json.contains("\"kind\":\"depends_on\""));
+        let canonical = built.graph.canonical();
+        let json = serde_json::to_string_pretty(&canonical).unwrap();
+        // Golden check: nodes must be sorted by id ("alpha" before "beta")
+        let alpha_pos = json.find("alpha").unwrap();
+        let beta_pos = json.find("beta").unwrap();
+        assert!(alpha_pos < beta_pos);
     }
 }
