@@ -80,7 +80,7 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
 ---
 
-## M5: Graph logic `[ ]`
+## M5: Graph logic `[x]`
 
 **Goal:** the deterministic core, fully tested.
 
@@ -90,9 +90,9 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 - Toposort with deterministic tie-breaking
 
 **Acceptance**
-- [ ] Unit and golden tests per [`TESTING.md`](TESTING.md) section 3
-- [ ] Simulation scenarios 2 and 3 pass
-- [ ] `graph/` has no I/O or async dependencies
+- [x] Unit and golden tests per [`TESTING.md`](TESTING.md) section 3
+- [x] Simulation scenarios 2 and 3 pass
+- [x] `graph/` has no I/O or async dependencies
 
 ---
 
