@@ -57,6 +57,13 @@ Template:
 - **Decision:** Call the project Scaffold. Crate names use the `scaffold-` prefix (`scaffold-server`, `scaffold-graph`, `scaffold-ai`).
 - **Consequences:** "Scaffold" is a very common word in software (framework code generators, for example), so search results and registry names may collide. Check availability of the GitHub repo name, crate names, npm package, and domain before publishing, and consider a distinguishing suffix if needed.
 
+## ADR-007: M1 WebSocket sync framing
+- **Status:** accepted
+- **Date:** 2026-11-01
+- **Context:** M1 needs versioned framing for room join, initial sync, live updates, and protocol errors over the existing WebSocket endpoint.
+- **Decision:** Use binary frames with a one-byte type tag and a versioned JSON payload for control messages. Encode the room id and client version vector in `Hello`; return missing update bytes and the server version vector in `SyncReply`; carry raw Loro update bytes in `Update`; use structured code/message data in `Error`. Reject unknown message types, malformed frames, oversized frames, and protocol-version mismatches. The server keeps one in-memory Loro document per room and broadcasts accepted updates to the other room peers.
+- **Consequences:** Control frame structure is inspectable and can evolve under an explicit protocol version; update payloads stay in Loro's binary format. JSON adds small control-frame overhead. Room state is lost on server restart until M2 persistence.
+
 ---
 
 ## Open decisions

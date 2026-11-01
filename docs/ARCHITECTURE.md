@@ -53,17 +53,19 @@ Binary WebSocket frames. First byte is the message type.
 
 | Type | Direction | Payload |
 |---|---|---|
-| `0x01 Hello` | C → S | room id, protocol version, client version vector |
-| `0x02 SyncReply` | S → C | updates the client is missing, plus server version vector |
-| `0x03 Update` | both | Loro update bytes (incremental) |
+| `0x01 Hello` | C → S | UTF-8 JSON: `{ protocol_version: u16, room_id: string, version: VersionVector }` |
+| `0x02 SyncReply` | S → C | UTF-8 JSON: `{ protocol_version: u16, version: VersionVector, updates: byte[] }` |
+| `0x03 Update` | both | raw Loro binary update bytes (incremental) |
 | `0x04 Presence` | both | ephemeral presence payload (cursor, selection, name, color) |
-| `0x05 Error` | S → C | code + message |
+| `0x05 Error` | S → C | UTF-8 JSON: `{ code: string, message: string }` |
+
+Every frame begins with the one-byte type tag. Control payloads are JSON. The current maximum frame is 1 MiB. `Hello` is the first client frame and includes the room id (the URL room id is currently informational); server protocol version is `1`. A late joiner sends an empty version vector and receives the entire update history in `SyncReply`. In steady state the server exports changes since its last room broadcast and relays each delta to all connected peers, including the originating peer. If a receiver falls behind the bounded room broadcast channel, it receives `resync_required` and reconnects for a complete delta.
 
 Flow:
 1. Client connects to `/ws/:room_id` and sends `Hello` with its version vector.
 2. Server replies with `SyncReply` containing everything the client lacks, and its own version vector.
-3. Client sends any updates the server lacks as `Update`.
-4. From then on, local edits are broadcast as `Update`; the server applies, persists, and relays to other clients in the room.
+3. The server sends `SyncReply` containing updates missing from the client's version vector.
+4. From then on, clients send local edits as `Update`; the server imports them into the shared room document and relays incremental updates to all room clients.
 5. Presence is relayed but **never persisted**.
 
 > Verify the exact Loro export/import calls (`export` modes, version vectors vs frontiers, ephemeral state support) against the pinned version's docs. This table defines Scaffold's framing, not Loro's API. If Loro's built-in ephemeral/presence support is sufficient, use it for `Presence`; otherwise relay presence as plain messages.

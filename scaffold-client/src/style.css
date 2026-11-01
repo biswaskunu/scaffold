@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root { font-family: Manrope, sans-serif; color: #19231f; background: #f5f6f1; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 720px; }
+main { max-width: 1440px; margin: 0 auto; padding: 30px 40px 48px; }
+header { display: flex; justify-content: space-between; align-items: center; }
+.eyebrow, .node-type { font: 500 10px 'DM Mono', monospace; letter-spacing: .12em; color: #789087; }
+.eyebrow { margin: 0 0 6px; }
+h1 { font-size: 27px; margin: 0; letter-spacing: -.04em; }
+.connection { display: flex; gap: 9px; align-items: center; color: #77837e; font-size: 12px; }
+.connection span { width: 8px; height: 8px; border-radius: 50%; background: #c9a45a; }
+.connection.online span { background: #52a77b; box-shadow: 0 0 0 4px #52a77b20; }
+.toolbar { margin: 26px 0 16px; display: flex; align-items: center; gap: 10px; }
+.toolbar label { display: flex; align-items: center; gap: 8px; color: #68766f; font-size: 12px; }
+input { width: 150px; padding: 9px 11px; border: 1px solid #dce2dc; border-radius: 7px; background: white; color: #24332c; font: inherit; font-size: 12px; }
+button { padding: 9px 14px; border: 1px solid #dce2dc; border-radius: 7px; background: white; color: #33433b; font: 600 12px Manrope, sans-serif; cursor: pointer; }
+button:hover { border-color: #6b9a7e; }
+button.primary { color: white; background: #28694c; border-color: #28694c; }
+.toolbar p { margin-left: auto; font-size: 11px; color: #97a19b; }
+.canvas { height: min(68vh, 680px); min-height: 400px; position: relative; overflow: auto; border: 1px solid #e1e6df; border-radius: 12px; background-color: #fbfcf9; background-image: radial-gradient(#dfe5de 1px, transparent 1px); background-size: 20px 20px; }
+.node { position: absolute; width: 210px; min-height: 108px; padding: 15px 16px; display: flex; flex-direction: column; gap: 11px; border: 1px solid #dce6dc; border-radius: 10px; background: white; box-shadow: 0 4px 14px #283b2e0b; cursor: grab; touch-action: none; }
+.node:active { cursor: grabbing; box-shadow: 0 10px 22px #283b2e20; }
+.node strong { font-size: 14px; font-weight: 700; }
+.node small { margin-top: auto; font: 10px 'DM Mono', monospace; color: #a0aaa3; }
+.node-type { font-size: 9px; }

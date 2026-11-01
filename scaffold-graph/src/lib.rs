@@ -118,7 +118,7 @@ impl Graph {
                     // Found a cycle - extract it from path
                     let mut cycle: Vec<String> = Vec::new();
                     let mut found = false;
-                    for (_i, node_id) in path.iter().enumerate() {
+                    for node_id in path.iter() {
                         if found {
                             cycle.push(node_id.clone());
                         }
@@ -206,6 +206,12 @@ impl Graph {
         }
 
         Ok(result)
+    }
+}
+
+impl Default for Graph {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

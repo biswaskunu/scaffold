@@ -75,6 +75,12 @@ impl MockProvider {
     }
 }
 
+impl Default for MockProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LlmProvider for MockProvider {
     fn name(&self) -> &str {
         "mock"

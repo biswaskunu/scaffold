@@ -2,7 +2,7 @@
 
 **A local-first, multiplayer canvas of typed nodes and edges that compiles into a validated, dependency-ordered implementation plan.**
 
-> Status: **pre-alpha.** Skeleton (M0) built and passing. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for milestones.
+> Status: **pre-alpha.** M0 skeleton and M1 in-memory sync are built. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for milestones.
 
 Sketch a system on a shared canvas: features, services, risks, tasks, and the dependencies between them. Edit with teammates in real time, or alone on a bad connection; everything merges when you reconnect. Then press **Extract** and Scaffold turns the graph into an ordered task plan.
 
@@ -70,7 +70,23 @@ Rich text inside nodes, freehand drawing, performance work beyond a few hundred 
 
 ## Development
 
-Setup instructions land with milestone M0. Planned prerequisites: a recent stable Rust toolchain, Node.js, and optionally [Ollama](https://ollama.com) for local LLM runs.
+Prerequisites: stable Rust, Node.js, and npm.
+
+Start the server in one terminal:
+
+```sh
+cargo run -p scaffold-server
+```
+
+Start the client in another terminal:
+
+```sh
+cd scaffold-client
+npm install
+npm run dev
+```
+
+Open the Vite URL in two tabs, leave both on `demo-room`, and create or drag nodes to see live updates. The room document is held in server memory and is lost on restart until M2 persistence.
 
 ## License
 

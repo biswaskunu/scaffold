@@ -21,7 +21,7 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
 ---
 
-## M1: Sync `[ ]`
+## M1: Sync `[x]`
 
 **Goal:** two clients edit one room and converge through the server.
 
@@ -30,9 +30,9 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 - Minimal client: create nodes, move them, see the other client's changes
 
 **Acceptance**
-- [ ] Integration test: two clients make concurrent edits; both end with identical canonical JSON
-- [ ] Late-joining client receives full state
-- [ ] Protocol version mismatch produces a clear `Error` frame
+- [x] Integration test: two clients make concurrent edits; both end with identical canonical JSON
+- [x] Late-joining client receives full state
+- [x] Protocol version mismatch produces a clear `Error` frame
 
 ---
 
