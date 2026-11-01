@@ -6,3 +6,4 @@ members = [
 ]
 
 [workspace.dependencies]
+loro = "1.0.0"

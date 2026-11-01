@@ -32,7 +32,10 @@ pub type LlmResult<T> = std::result::Result<T, LlmError>;
 
 pub trait LlmProvider: Send + Sync + 'static {
     fn name(&self) -> &str;
-    fn send(&self, prompt: &str) -> std::pin::Pin<Box<dyn std::future::Future<Output = LlmResult<LlmResponse>> + Send>>;
+    fn send(
+        &self,
+        prompt: &str,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = LlmResult<LlmResponse>> + Send>>;
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -77,7 +80,10 @@ impl LlmProvider for MockProvider {
         "mock"
     }
 
-    fn send(&self, _prompt: &str) -> std::pin::Pin<Box<dyn std::future::Future<Output = LlmResult<LlmResponse>> + Send>> {
+    fn send(
+        &self,
+        _prompt: &str,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = LlmResult<LlmResponse>> + Send>> {
         Box::pin(async move {
             Ok(LlmResponse {
                 content: r#"{"tasks":[{"node_id":"n1","title":"Task 1","body":"Do something","effort":2.0,"source_node":null}],"plan_order":["n1"],"cycle":null}"#.to_string(),

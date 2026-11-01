@@ -13,3 +13,4 @@ tokio = { version = "1.38", features = ["full"] }
 serde_json = "1.0"
 chrono = "0.4"
 anyhow = "1.0"
+loro = "1.0.0"

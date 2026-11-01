@@ -72,7 +72,8 @@ impl Graph {
     pub fn detect_cycles(&self) -> Vec<Vec<String>> {
         let mut visited: Vec<bool> = vec![false; self.nodes.len()];
         let mut rec_stack: Vec<bool> = vec![false; self.nodes.len()];
-        let mut node_indices: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut node_indices: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
         for (i, node) in self.nodes.iter().enumerate() {
             node_indices.insert(node.id.clone(), i);
         }
@@ -104,7 +105,15 @@ impl Graph {
                 };
 
                 if !visited[target_idx] {
-                    dfs(target_idx, graph, visited, rec_stack, node_indices, cycles, path);
+                    dfs(
+                        target_idx,
+                        graph,
+                        visited,
+                        rec_stack,
+                        node_indices,
+                        cycles,
+                        path,
+                    );
                 } else if rec_stack[target_idx] {
                     // Found a cycle - extract it from path
                     let mut cycle: Vec<String> = Vec::new();
@@ -129,7 +138,15 @@ impl Graph {
 
         for i in 0..self.nodes.len() {
             if !visited[i] {
-                dfs(i, self, &mut visited, &mut rec_stack, &node_indices, &mut cycles, &mut Vec::new());
+                dfs(
+                    i,
+                    self,
+                    &mut visited,
+                    &mut rec_stack,
+                    &node_indices,
+                    &mut cycles,
+                    &mut Vec::new(),
+                );
             }
         }
 
@@ -138,8 +155,10 @@ impl Graph {
 
     pub fn topological_sort(&self) -> Result<Vec<String>, String> {
         // Build adjacency list
-        let mut in_degree: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-        let mut adj: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+        let mut in_degree: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        let mut adj: std::collections::HashMap<String, Vec<String>> =
+            std::collections::HashMap::new();
 
         for node in &self.nodes {
             in_degree.insert(node.id.clone(), 0);
@@ -148,7 +167,9 @@ impl Graph {
 
         for edge in &self.edges {
             *in_degree.get_mut(&edge.to).unwrap_or(&mut 0) += 1;
-            adj.entry(edge.from.clone()).or_default().push(edge.to.clone());
+            adj.entry(edge.from.clone())
+                .or_default()
+                .push(edge.to.clone());
         }
 
         // Kahn's algorithm with deterministic tie-breaking (sort by node id)
@@ -249,7 +270,10 @@ impl Graph {
 
         // Sort edges by (kind, from, to)
         edges.sort_by(|a, b| {
-            a.kind.cmp(&b.kind).then_with(|| a.from.cmp(&b.from)).then_with(|| a.to.cmp(&b.to))
+            a.kind
+                .cmp(&b.kind)
+                .then_with(|| a.from.cmp(&b.from))
+                .then_with(|| a.to.cmp(&b.to))
         });
 
         CanonicalGraph { nodes, edges }
@@ -371,7 +395,10 @@ mod tests {
         });
 
         let order = g.topological_sort().unwrap();
-        assert_eq!(order, vec!["n1".to_string(), "n2".to_string(), "n3".to_string()]);
+        assert_eq!(
+            order,
+            vec!["n1".to_string(), "n2".to_string(), "n3".to_string()]
+        );
     }
 
     #[test]
