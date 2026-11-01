@@ -36,9 +36,10 @@ pub async fn ws_handler(mut socket: WebSocket, rooms: RoomManager) {
     }
     let room = rooms.get_or_create(&hello.room_id).await;
     let connection_id = NEXT_CONNECTION_ID.fetch_add(1, Ordering::Relaxed);
-    let (mut updates_rx, initial_frame) = {
+    let (mut updates_rx, mut presence_rx, initial_frame) = {
         let room = room.lock().await;
         let updates_rx = room.updates.subscribe();
+        let presence_rx = room.presence_updates.subscribe();
         let delta = match room.export_since(&hello.version) {
             Ok(delta) => delta,
             Err(error) => {
@@ -58,39 +59,69 @@ pub async fn ws_handler(mut socket: WebSocket, rooms: RoomManager) {
                 return;
             }
         };
-        (updates_rx, frame)
+        (updates_rx, presence_rx, frame)
     };
     if socket.send(Message::Binary(initial_frame)).await.is_err() {
         return;
     }
 
     let (mut sender, mut receiver) = socket.split();
+    let room_clone = room.clone();
     let writer = tokio::spawn(async move {
-        loop {
-            match updates_rx.recv().await {
-                Ok((source, update)) => {
-                    if source != connection_id
-                        && sender
-                            .send(Message::Binary(sync_protocol::encode_update(&update)))
-                            .await
-                            .is_err()
-                    {
-                        break;
+        tokio::select! {
+            _ = async {
+                loop {
+                    tokio::select! {
+                        res = updates_rx.recv() => {
+                            match res {
+                                Ok((source, update)) => {
+                                    if source != connection_id
+                                        && sender
+                                            .send(Message::Binary(sync_protocol::encode_update(&update)))
+                                            .await
+                                            .is_err()
+                                    {
+                                        break;
+                                    }
+                                }
+                                Err(broadcast::error::RecvError::Lagged(_)) => {
+                                    let _ = send_error(
+                                        &mut sender,
+                                        "resync_required",
+                                        "client fell behind; reconnect to resync",
+                                    )
+                                    .await;
+                                    break;
+                                }
+                                Err(broadcast::error::RecvError::Closed) => break,
+                            }
+                        }
+                        res = presence_rx.recv() => {
+                            match res {
+                                Ok((source, frame_data)) => {
+                                    if source != connection_id
+                                        && sender
+                                            .send(Message::Binary(frame_data))
+                                            .await
+                                            .is_err()
+                                    {
+                                        break;
+                                    }
+                                }
+                                Err(broadcast::error::RecvError::Lagged(_)) => {}
+                                Err(broadcast::error::RecvError::Closed) => break,
+                            }
+                        }
                     }
                 }
-                Err(broadcast::error::RecvError::Lagged(_)) => {
-                    send_error(
-                        &mut sender,
-                        "resync_required",
-                        "client fell behind; reconnect to resync",
-                    )
-                    .await;
-                    break;
-                }
-                Err(broadcast::error::RecvError::Closed) => break,
-            }
+            } => {}
         }
     });
+
+    let _guard = DropGuard {
+        room: room_clone,
+        connection_id,
+    };
     loop {
         match receiver.next().await {
             Some(Ok(Message::Binary(frame))) => {
@@ -122,6 +153,12 @@ pub async fn ws_handler(mut socket: WebSocket, rooms: RoomManager) {
                             }
                         }
                     }
+                    ClientMessage::Presence(state) => {
+                        let room = room.lock().await;
+                        if let Ok(frame) = sync_protocol::encode_presence(&connection_id.to_string(), &state) {
+                            let _ = room.presence_updates.send((connection_id, frame));
+                        }
+                    }
                 }
             }
             Some(Ok(Message::Close(_))) | None | Some(Err(_)) => {
@@ -136,6 +173,24 @@ pub async fn ws_handler(mut socket: WebSocket, rooms: RoomManager) {
         if writer.is_finished() {
             return;
         }
+    }
+}
+
+struct DropGuard {
+    room: std::sync::Arc<tokio::sync::Mutex<crate::room::Room>>,
+    connection_id: u64,
+}
+
+impl Drop for DropGuard {
+    fn drop(&mut self) {
+        let room = self.room.clone();
+        let cid = self.connection_id;
+        tokio::spawn(async move {
+            let room = room.lock().await;
+            if let Ok(frame) = sync_protocol::encode_peer_left(&cid.to_string()) {
+                let _ = room.presence_updates.send((cid, frame));
+            }
+        });
     }
 }
 

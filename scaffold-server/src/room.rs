@@ -9,6 +9,7 @@ pub const ROOM_CHANNEL_CAPACITY: usize = 256;
 pub struct Room {
     pub doc: LoroDoc,
     pub updates: broadcast::Sender<(u64, Vec<u8>)>,
+    pub presence_updates: broadcast::Sender<(u64, Vec<u8>)>,
     pub version: VersionVector,
     pub updates_since_compaction: usize,
     pub last_activity: Instant,
@@ -17,9 +18,11 @@ pub struct Room {
 impl Room {
     fn new() -> Self {
         let (updates, _) = broadcast::channel(ROOM_CHANNEL_CAPACITY);
+        let (presence_updates, _) = broadcast::channel(ROOM_CHANNEL_CAPACITY);
         Self {
             doc: LoroDoc::new(),
             updates,
+            presence_updates,
             version: VersionVector::default(),
             updates_since_compaction: 0,
             last_activity: Instant::now(),

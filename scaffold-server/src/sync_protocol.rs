@@ -8,7 +8,18 @@ pub const MAX_FRAME_BYTES: usize = 1024 * 1024;
 const HELLO: u8 = 0x01;
 const SYNC_REPLY: u8 = 0x02;
 const UPDATE: u8 = 0x03;
+const PRESENCE: u8 = 0x04;
 const ERROR: u8 = 0x05;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PresenceState {
+    pub name: String,
+    pub color: String,
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub selected_nodes: Vec<String>,
+    pub editing_node: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Hello {
@@ -34,6 +45,7 @@ pub struct ProtocolError {
 pub enum ClientMessage {
     Hello(Hello),
     Update(Vec<u8>),
+    Presence(PresenceState),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -60,6 +72,7 @@ pub fn decode_client(bytes: &[u8]) -> Result<ClientMessage, FrameError> {
     match bytes[0] {
         HELLO => Ok(ClientMessage::Hello(serde_json::from_slice(&bytes[1..])?)),
         UPDATE => Ok(ClientMessage::Update(bytes[1..].to_vec())),
+        PRESENCE => Ok(ClientMessage::Presence(serde_json::from_slice(&bytes[1..])?)),
         SYNC_REPLY | ERROR => Err(FrameError::WrongDirection),
         other => Err(FrameError::UnknownType(other)),
     }
@@ -78,6 +91,24 @@ pub fn encode_update(update: &[u8]) -> Vec<u8> {
     frame.push(UPDATE);
     frame.extend_from_slice(update);
     frame
+}
+
+pub fn encode_presence(connection_id: &str, presence: &PresenceState) -> Result<Vec<u8>, serde_json::Error> {
+    #[derive(Serialize)]
+    struct TaggedPresence<'a> {
+        connection_id: &'a str,
+        #[serde(flatten)]
+        presence: &'a PresenceState,
+    }
+    encode_json(PRESENCE, &TaggedPresence { connection_id, presence })
+}
+
+pub fn encode_peer_left(connection_id: &str) -> Result<Vec<u8>, serde_json::Error> {
+    #[derive(Serialize)]
+    struct PeerLeft<'a> {
+        connection_id: &'a str,
+    }
+    encode_json(PRESENCE, &PeerLeft { connection_id })
 }
 
 fn encode_json<T: Serialize>(kind: u8, value: &T) -> Result<Vec<u8>, serde_json::Error> {
@@ -105,6 +136,7 @@ mod tests {
                 assert_eq!(decoded.protocol_version, PROTOCOL_VERSION);
             }
             ClientMessage::Update(_) => panic!("expected hello"),
+            ClientMessage::Presence(_) => panic!("expected hello"),
         }
     }
 

@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 #[derive(Clone)]
 pub struct Store {
-    pool: SqlitePool,
+    pub pool: SqlitePool,
 }
 
 impl Store {
