@@ -4,8 +4,64 @@ import './style.css';
 
 const PROTOCOL_VERSION = 1;
 const roomInput = document.querySelector<HTMLInputElement>('#room')!;
+const userNameInput = document.querySelector<HTMLInputElement>('#user-name')!;
+const userColorSelect = document.querySelector<HTMLSelectElement>('#user-color')!;
+const activeAvatarsContainer = document.querySelector<HTMLElement>('#active-avatars')!;
 const canvas = document.querySelector<HTMLElement>('#canvas')!;
 const connection = document.querySelector<HTMLElement>('#connection')!;
+
+// Identity management
+const PALETTE = ['#e06c75', '#d19a66', '#e5c07b', '#98c379', '#56b6c2', '#61afef', '#c678dd', '#abb2bf'];
+const ANIMALS = ['Fox', 'Owl', 'Bear', 'Wolf', 'Deer', 'Hawk', 'Otter', 'Lynx', 'Badger', 'Panda'];
+
+function getOrInitIdentity() {
+  let name = localStorage.getItem('scaffold_user_name');
+  let color = localStorage.getItem('scaffold_user_color');
+  if (!name) {
+    const randomAnimal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+    const randomNum = Math.floor(Math.random() * 900) + 100;
+    name = `${randomAnimal} ${randomNum}`;
+    localStorage.setItem('scaffold_user_name', name);
+  }
+  if (!color) {
+    color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    localStorage.setItem('scaffold_user_color', color);
+  }
+  return { name, color };
+}
+
+const myIdentity = getOrInitIdentity();
+userNameInput.value = myIdentity.name;
+userColorSelect.value = myIdentity.color;
+
+userNameInput.addEventListener('input', () => {
+  localStorage.setItem('scaffold_user_name', userNameInput.value);
+});
+userColorSelect.addEventListener('change', () => {
+  localStorage.setItem('scaffold_user_color', userColorSelect.value);
+});
+
+function sendUpdate(update: Uint8Array): void {
+  if (syncing && socket?.readyState === WebSocket.OPEN && update.length > 0) {
+    socket.send(binaryFrame(0x03, update));
+  }
+}
+type PeerPresence = {
+  name: string;
+  color: string;
+  x?: number;
+  y?: number;
+  selected_nodes: string[];
+  editing_node?: string | null;
+  lastSeen: number;
+};
+const peers = new Map<string, PeerPresence>();
+let mouseX: number | undefined = undefined;
+let mouseY: number | undefined = undefined;
+let selectedNodes = new Set<string>();
+let editingNode: string | null = null;
+let lastPresenceSend = 0;
+
 
 let doc = new LoroDoc();
 let nodes = doc.getMap('nodes');
@@ -37,10 +93,21 @@ function jsonFrame(kind: number, value: unknown): Uint8Array {
   return binaryFrame(kind, new TextEncoder().encode(JSON.stringify(value)));
 }
 
-function sendUpdate(update: Uint8Array): void {
-  if (syncing && socket?.readyState === WebSocket.OPEN && update.length > 0) {
-    socket.send(binaryFrame(0x03, update));
-  }
+function sendPresence(force = false) {
+  if (!syncing || socket?.readyState !== WebSocket.OPEN) return;
+  const now = performance.now();
+  if (!force && now - lastPresenceSend < 40) return; // ~25fps throttle
+  lastPresenceSend = now;
+
+  const state = {
+    name: userNameInput.value || 'Anonymous',
+    color: userColorSelect.value,
+    x: mouseX,
+    y: mouseY,
+    selected_nodes: Array.from(selectedNodes),
+    editing_node: editingNode,
+  };
+  socket.send(jsonFrame(0x04, state));
 }
 
 async function persistAndPush(update: Uint8Array, origin: 'local' | 'remote') {
@@ -63,20 +130,106 @@ async function persistAndPush(update: Uint8Array, origin: 'local' | 'remote') {
 }
 
 function render(): void {
+  // Save current scroll position
+  const scrollLeft = canvas.scrollLeft;
+  const scrollTop = canvas.scrollTop;
+
   canvas.replaceChildren();
+
+  // Render remote cursors
+  for (const [, peer] of peers.entries()) {
+    if (peer.x !== undefined && peer.y !== undefined && now() - peer.lastSeen < 10000) {
+      const cursorEl = document.createElement('div');
+      cursorEl.className = 'remote-cursor';
+      const isIdle = now() - peer.lastSeen > 5000;
+      cursorEl.style.opacity = isIdle ? '0.4' : '1.0';
+      cursorEl.style.transform = `translate(${peer.x}px, ${peer.y}px)`;
+      cursorEl.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="${peer.color}" stroke="white" stroke-width="2"><path d="M5.5 3.21V20.8l4.47-4.47h8.82L5.5 3.21z"/></svg>
+        <span style="background: ${peer.color}">${escapeHtml(peer.name)}</span>
+      `;
+      canvas.append(cursorEl);
+    }
+  }
+
   for (const [id, value] of nodes.entries()) {
     if (!value || typeof value !== 'object') continue;
     const node = value as NodeValue;
     const card = document.createElement('article');
     card.className = 'node';
+    if (selectedNodes.has(id)) {
+      card.classList.add('selected');
+    }
     card.dataset.id = id;
     card.style.left = `${node.x ?? 60}px`;
     card.style.top = `${node.y ?? 60}px`;
-    card.innerHTML = `<span class="node-type">FEATURE</span><strong></strong><small></small>`;
+
+    // Check if any peer is editing this node
+    let editingPeer: PeerPresence | undefined;
+    for (const peer of peers.values()) {
+      if (peer.editing_node === id && now() - peer.lastSeen < 10000) {
+        editingPeer = peer;
+        break;
+      }
+    }
+
+    let innerHtml = `<span class="node-type">FEATURE</span><strong></strong><small></small>`;
+    if (editingPeer) {
+      innerHtml += `<div class="editing-badge" style="--peer-color: ${editingPeer.color}">${escapeHtml(editingPeer.name)} editing...</div>`;
+      card.style.setProperty('--peer-color', editingPeer.color);
+    } else if (selectedNodes.has(id)) {
+      card.style.setProperty('--peer-color', userColorSelect.value);
+    }
+
+    card.innerHTML = innerHtml;
     card.querySelector('strong')!.textContent = node.title ?? 'Untitled';
     card.querySelector('small')!.textContent = id.slice(0, 8);
-    card.addEventListener('pointerdown', (event) => beginDrag(event, card, id));
+
+    card.addEventListener('pointerdown', (event) => {
+      if (!event.shiftKey) {
+        selectedNodes.clear();
+      }
+      selectedNodes.add(id);
+      render();
+      sendPresence(true);
+      beginDrag(event, card, id);
+    });
+
     canvas.append(card);
+  }
+
+  // Restore scroll
+  canvas.scrollLeft = scrollLeft;
+  canvas.scrollTop = scrollTop;
+
+  renderAvatars();
+}
+
+function now() {
+  return performance.now();
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderAvatars() {
+  activeAvatarsContainer.replaceChildren();
+  // Self avatar
+  const selfDiv = document.createElement('div');
+  selfDiv.className = 'avatar-badge';
+  selfDiv.style.background = userColorSelect.value;
+  selfDiv.textContent = userNameInput.value || 'You';
+  activeAvatarsContainer.append(selfDiv);
+
+  for (const peer of peers.values()) {
+    if (now() - peer.lastSeen < 10000) {
+      const div = document.createElement('div');
+      div.className = 'avatar-badge';
+      div.style.background = peer.color;
+      div.textContent = peer.name;
+      activeAvatarsContainer.append(div);
+    }
   }
 }
 
@@ -181,6 +334,31 @@ function connect(manual = false): void {
       doc.import(updateBytes);
       lastSyncedVersion = doc.oplogVersion();
       await persistAndPush(updateBytes, 'remote');
+    } else if (frame[0] === 0x04) {
+      const presencePayload = JSON.parse(new TextDecoder().decode(frame.slice(1))) as {
+        connection_id: string;
+        name: string;
+        color: string;
+        x?: number;
+        y?: number;
+        selected_nodes: string[];
+        editing_node?: string | null;
+      };
+      if (presencePayload.name === undefined && presencePayload.color === undefined && presencePayload.x === undefined) {
+        // Peer left frame
+        peers.delete(presencePayload.connection_id);
+      } else {
+        peers.set(presencePayload.connection_id, {
+          name: presencePayload.name,
+          color: presencePayload.color,
+          x: presencePayload.x,
+          y: presencePayload.y,
+          selected_nodes: presencePayload.selected_nodes || [],
+          editing_node: presencePayload.editing_node,
+          lastSeen: now(),
+        });
+      }
+      render();
     } else if (frame[0] === 0x05) {
       const error = JSON.parse(new TextDecoder().decode(frame.slice(1))) as { message: string };
       if (error.message.includes('protocol_version_mismatch')) {
@@ -228,6 +406,34 @@ async function switchRoom(newRoomId: string) {
   render();
   connect(true);
 }
+
+canvas.addEventListener('pointermove', (event) => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = event.clientX - rect.left + canvas.scrollLeft;
+  mouseY = event.clientY - rect.top + canvas.scrollTop;
+  sendPresence(false);
+});
+
+canvas.addEventListener('pointerleave', () => {
+  mouseX = undefined;
+  mouseY = undefined;
+  sendPresence(true);
+});
+
+setInterval(() => {
+  sendPresence(true);
+  let changed = false;
+  const current = now();
+  for (const [id, peer] of peers.entries()) {
+    if (current - peer.lastSeen > 10000) {
+      peers.delete(id);
+      changed = true;
+    }
+  }
+  if (changed) {
+    render();
+  }
+}, 3000);
 
 document.querySelector('#connect')!.addEventListener('click', () => connect(true));
 roomInput.addEventListener('change', () => {

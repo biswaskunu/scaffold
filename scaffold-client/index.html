@@ -13,9 +13,20 @@
       </header>
       <section class="toolbar">
         <label>Room <input id="room" value="demo-room" /></label>
+        <label>Name <input id="user-name" value="" placeholder="Name..." /></label>
+        <label>Color <select id="user-color">
+          <option value="#e06c75">Coral</option>
+          <option value="#d19a66">Amber</option>
+          <option value="#e5c07b">Gold</option>
+          <option value="#98c379">Sage</option>
+          <option value="#56b6c2">Teal</option>
+          <option value="#61afef">Sky</option>
+          <option value="#c678dd">Purple</option>
+          <option value="#abb2bf">Slate</option>
+        </select></label>
         <button id="connect">Reconnect now</button>
         <button id="add" class="primary">＋ Add node</button>
-        <p>Drag cards to move them. Open another tab to try live sync.</p>
+        <div id="active-avatars" class="active-avatars"></div>
       </section>
       <section id="canvas" class="canvas" aria-label="Canvas"></section>
     </main>

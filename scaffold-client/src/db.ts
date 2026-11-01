@@ -10,7 +10,6 @@ export interface StorageRecord {
 const DB_NAME = 'scaffold';
 const STORE_NAME = 'updates';
 const DB_VERSION = 1;
-const COMPACTION_THRESHOLD = 200;
 
 export function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
