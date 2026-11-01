@@ -71,7 +71,7 @@ impl Store {
         .fetch_all(&self.pool)
         .await?;
 
-        let update_bytes = updates.into_iter().map(|u| u.0).collect();
+        let update_bytes: Vec<Vec<u8>> = updates.into_iter().map(|u| u.0).collect();
 
         if snapshot_data.is_empty() && update_bytes.is_empty() {
             Ok(None)
@@ -86,6 +86,7 @@ impl Store {
         snapshot_data: &[u8],
         covered_seq: i64,
     ) -> Result<(), sqlx::Error> {
+        self.ensure_room(room_id).await?;
         let mut tx = self.pool.begin().await?;
 
         sqlx::query(

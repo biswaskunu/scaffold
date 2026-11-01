@@ -21,3 +21,4 @@ loro = "1.0.0"
 [dev-dependencies]
 tokio-tungstenite = "0.24"
 tower = { version = "0.5", features = ["util"] }
+tempfile = "3.10"
