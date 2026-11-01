@@ -18,14 +18,16 @@ async fn test_persistence_restart_and_reload() {
     let mut doc = LoroDoc::new();
     doc.set_peer_id(1).unwrap();
     doc.get_map("root").insert("key1", "value1").unwrap();
-    let bytes = doc.export(ExportMode::updates(&VersionVector::default())).unwrap();
+    let bytes = doc
+        .export(ExportMode::updates(&VersionVector::default()))
+        .unwrap();
     rooms.apply_update("room-1", 1, &bytes).await.unwrap();
 
     let json_before = rooms.state_json("room-1").await.unwrap();
 
     // Phase 2: Restart store and room manager with same database
     drop(rooms);
-    
+
     let store2 = Store::new(&database_url).await.unwrap();
     let rooms2 = RoomManager::new(Some(store2));
 
@@ -49,7 +51,9 @@ async fn test_compaction_and_reload() {
     let mut doc = LoroDoc::new();
     doc.set_peer_id(1).unwrap();
     doc.get_map("root").insert("item", "100").unwrap();
-    let bytes = doc.export(ExportMode::updates(&VersionVector::default())).unwrap();
+    let bytes = doc
+        .export(ExportMode::updates(&VersionVector::default()))
+        .unwrap();
     rooms.apply_update("room-2", 1, &bytes).await.unwrap();
 
     // Explicitly compact

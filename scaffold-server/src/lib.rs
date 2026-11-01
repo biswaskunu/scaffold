@@ -12,7 +12,8 @@ mod ws_handler;
 mod spike_loro;
 
 pub async fn run(addr: SocketAddr) -> Result<()> {
-    let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://scaffold.db".to_string());
+    let database_url =
+        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://scaffold.db".to_string());
     let store = store::Store::new(&database_url).await.ok();
     let rooms = room::RoomManager::new(store);
 

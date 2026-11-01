@@ -13,7 +13,7 @@ impl Store {
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
 
         let pool = SqlitePool::connect_with(options).await?;
-        
+
         // Run migrations
         sqlx::migrate!("./migrations")
             .run(&pool)
@@ -24,29 +24,33 @@ impl Store {
     }
 
     pub async fn ensure_room(&self, room_id: &str) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            "INSERT INTO rooms (id) VALUES (?) ON CONFLICT(id) DO NOTHING"
-        )
-        .bind(room_id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("INSERT INTO rooms (id) VALUES (?) ON CONFLICT(id) DO NOTHING")
+            .bind(room_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
-    pub async fn append_update(&self, room_id: &str, update_data: &[u8], sequence: i64) -> Result<(), sqlx::Error> {
+    pub async fn append_update(
+        &self,
+        room_id: &str,
+        update_data: &[u8],
+        sequence: i64,
+    ) -> Result<(), sqlx::Error> {
         self.ensure_room(room_id).await?;
-        sqlx::query(
-            "INSERT INTO room_updates (room_id, update_data, sequence) VALUES (?, ?, ?)"
-        )
-        .bind(room_id)
-        .bind(update_data)
-        .bind(sequence)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("INSERT INTO room_updates (room_id, update_data, sequence) VALUES (?, ?, ?)")
+            .bind(room_id)
+            .bind(update_data)
+            .bind(sequence)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
-    pub async fn load_room_data(&self, room_id: &str) -> Result<Option<(Vec<u8>, i64, Vec<Vec<u8>>)>, sqlx::Error> {
+    pub async fn load_room_data(
+        &self,
+        room_id: &str,
+    ) -> Result<Option<(Vec<u8>, i64, Vec<Vec<u8>>)>, sqlx::Error> {
         // Returns Option<(snapshot_data, last_update_id, subsequent_updates)>
         let snapshot_row: Option<(Vec<u8>, i64)> = sqlx::query_as(
             "SELECT snapshot_data, last_update_id FROM room_snapshots WHERE room_id = ? AND kind = 'compacted'"
@@ -99,13 +103,11 @@ impl Store {
         .execute(&mut *tx)
         .await?;
 
-        sqlx::query(
-            "DELETE FROM room_updates WHERE room_id = ? AND sequence <= ?"
-        )
-        .bind(room_id)
-        .bind(covered_seq)
-        .execute(&mut *tx)
-        .await?;
+        sqlx::query("DELETE FROM room_updates WHERE room_id = ? AND sequence <= ?")
+            .bind(room_id)
+            .bind(covered_seq)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
         Ok(())

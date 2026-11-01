@@ -1,8 +1,8 @@
 use crate::store::Store;
 use loro::{ExportMode, LoroDoc, ToJson, VersionVector};
+use std::time::Instant;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{broadcast, Mutex};
-use std::time::Instant;
 
 pub const ROOM_CHANNEL_CAPACITY: usize = 256;
 
@@ -51,6 +51,12 @@ pub struct RoomManager {
     compact_idle_secs: u64,
 }
 
+impl Default for RoomManager {
+    fn default() -> Self {
+        Self::new(None)
+    }
+}
+
 impl RoomManager {
     pub fn new(store: Option<Store>) -> Self {
         let compact_after_updates = std::env::var("COMPACT_AFTER_UPDATES")
@@ -83,7 +89,9 @@ impl RoomManager {
         let mut room = Room::new();
 
         if let Some(ref store) = self.store {
-            if let Ok(Some((snapshot_data, _last_update_id, subsequent_updates))) = store.load_room_data(id).await {
+            if let Ok(Some((snapshot_data, _last_update_id, subsequent_updates))) =
+                store.load_room_data(id).await
+            {
                 if !snapshot_data.is_empty() {
                     let _ = room.doc.import(&snapshot_data);
                 }
@@ -118,12 +126,18 @@ impl RoomManager {
         let mut room = room.lock().await;
         let before = room.doc.oplog_vv();
         room.doc.import(bytes).map_err(|error| error.to_string())?;
-        
+
         if room.doc.oplog_vv() != before {
             room.updates_since_compaction += 1;
             room.last_activity = Instant::now();
-            let seq = room.doc.oplog_vv().frontiers().iter().map(|f| f.counter as i64).sum::<i64>(); // Approximate seq or use counter
-            
+            let seq = room
+                .doc
+                .oplog_vv()
+                .get_frontiers()
+                .iter()
+                .map(|f| f.counter as i64)
+                .sum::<i64>();
+
             if let Some(ref store) = self.store {
                 let _ = store.append_update(id, bytes, seq).await;
             }
@@ -153,9 +167,17 @@ impl RoomManager {
             return Ok(());
         };
 
-        // Capture covered sequence / vector state before export
-        let covered_seq = room.doc.oplog_vv().frontiers().iter().map(|f| f.counter as i64).sum::<i64>();
-        let snapshot_data = room.doc.export(ExportMode::Snapshot).map_err(|e| e.to_string())?;
+        let covered_seq = room
+            .doc
+            .oplog_vv()
+            .get_frontiers()
+            .iter()
+            .map(|f| f.counter as i64)
+            .sum::<i64>();
+        let snapshot_data = room
+            .doc
+            .export(ExportMode::Snapshot)
+            .map_err(|e| e.to_string())?;
 
         store
             .compact(id, &snapshot_data, covered_seq)
@@ -176,8 +198,9 @@ impl RoomManager {
                 let rooms_map = manager.rooms.lock().await;
                 for (id, room_arc) in rooms_map.iter() {
                     let mut room = room_arc.lock().await;
-                    if room.updates_since_compaction > 0 
-                        && now.duration_since(room.last_activity).as_secs() >= manager.compact_idle_secs 
+                    if room.updates_since_compaction > 0
+                        && now.duration_since(room.last_activity).as_secs()
+                            >= manager.compact_idle_secs
                     {
                         let _ = manager.compact_room_internal(id, &mut room).await;
                     }
