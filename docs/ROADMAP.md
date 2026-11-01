@@ -50,7 +50,7 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
 ---
 
-## M3: Offline `[x]`
+## M3: Offline `[~]`
 
 **Goal:** clients edit offline and merge on reconnect.
 
