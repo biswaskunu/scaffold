@@ -40,7 +40,7 @@ pub struct Edge {
     pub kind: EdgeKind,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EdgeKind {
     DependsOn,
     PartOf,
@@ -53,11 +53,78 @@ pub struct Graph {
     pub edges: Vec<Edge>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum GraphWarning {
+    DanglingEdge { edge_id: String, missing_node: String },
+    SelfEdge { edge_id: String },
+    DuplicateEdge { kept: String, dropped: String },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BuiltGraph {
+    pub graph: Graph,
+    pub warnings: Vec<GraphWarning>,
+}
+
 impl Graph {
     pub fn new() -> Self {
         Graph {
             nodes: Vec::new(),
             edges: Vec::new(),
+        }
+    }
+
+    pub fn build(nodes: Vec<Node>, edges: Vec<Edge>) -> BuiltGraph {
+        let mut valid_nodes = std::collections::HashMap::new();
+        let mut graph_nodes = Vec::new();
+        for node in nodes {
+            if valid_nodes.insert(node.id.clone(), node.clone()).is_none() {
+                graph_nodes.push(node);
+            }
+        }
+
+        let mut graph_edges = Vec::new();
+        let mut warnings = Vec::new();
+        let mut seen_edges = std::collections::HashSet::new();
+
+        for edge in edges {
+            if edge.from == edge.to {
+                warnings.push(GraphWarning::SelfEdge { edge_id: edge.id });
+                continue;
+            }
+            if !valid_nodes.contains_key(&edge.from) {
+                warnings.push(GraphWarning::DanglingEdge {
+                    edge_id: edge.id,
+                    missing_node: edge.from,
+                });
+                continue;
+            }
+            if !valid_nodes.contains_key(&edge.to) {
+                warnings.push(GraphWarning::DanglingEdge {
+                    edge_id: edge.id,
+                    missing_node: edge.to,
+                });
+                continue;
+            }
+
+            let key = (edge.kind.clone(), edge.from.clone(), edge.to.clone());
+            if !seen_edges.insert(key) {
+                warnings.push(GraphWarning::DuplicateEdge {
+                    kept: "existing".to_string(),
+                    dropped: edge.id,
+                });
+                continue;
+            }
+
+            graph_edges.push(edge);
+        }
+
+        BuiltGraph {
+            graph: Graph {
+                nodes: graph_nodes,
+                edges: graph_edges,
+            },
+            warnings,
         }
     }
 
@@ -154,7 +221,7 @@ impl Graph {
     }
 
     pub fn topological_sort(&self) -> Result<Vec<String>, String> {
-        // Build adjacency list
+        // Build adjacency list strictly for depends_on edges
         let mut in_degree: std::collections::HashMap<String, usize> =
             std::collections::HashMap::new();
         let mut adj: std::collections::HashMap<String, Vec<String>> =
@@ -166,10 +233,14 @@ impl Graph {
         }
 
         for edge in &self.edges {
-            *in_degree.get_mut(&edge.to).unwrap_or(&mut 0) += 1;
-            adj.entry(edge.from.clone())
-                .or_default()
-                .push(edge.to.clone());
+            if let EdgeKind::DependsOn = edge.kind {
+                if let Some(in_deg) = in_degree.get_mut(&edge.to) {
+                    *in_deg += 1;
+                }
+                adj.entry(edge.from.clone())
+                    .or_default()
+                    .push(edge.to.clone());
+            }
         }
 
         // Kahn's algorithm with deterministic tie-breaking (sort by node id)
@@ -186,21 +257,19 @@ impl Graph {
             let node = ready.remove(0);
             result.push(node.clone());
 
-            let neighbors = adj.get(&node).cloned().unwrap_or_default();
-            for neighbor in neighbors {
-                let in_deg = in_degree.get_mut(&neighbor).unwrap();
-                *in_deg -= 1;
-                if *in_deg == 0 {
-                    // Insert in sorted position
-                    let pos = ready.binary_search(&neighbor).unwrap_err();
-                    ready.insert(pos, neighbor);
+            if let Some(neighbors) = adj.get(&node) {
+                for neighbor in neighbors {
+                    if let Some(in_deg) = in_degree.get_mut(neighbor) {
+                        *in_deg -= 1;
+                        if *in_deg == 0 {
+                            let pos = ready.binary_search(neighbor).unwrap_or_else(|e| e);
+                            ready.insert(pos, neighbor.clone());
+                        }
+                    }
                 }
             }
-
-            ready.sort();
         }
 
-        // Check for cycles
         if result.len() != self.nodes.len() {
             return Err("Graph has cycles".to_string());
         }
