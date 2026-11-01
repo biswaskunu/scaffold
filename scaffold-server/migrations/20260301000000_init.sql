@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS rooms (
+    id TEXT PRIMARY KEY,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS room_updates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    update_data BLOB NOT NULL,
+    sequence INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS room_snapshots (
+    room_id TEXT PRIMARY KEY REFERENCES rooms(id) ON DELETE CASCADE,
+    snapshot_data BLOB NOT NULL,
+    last_update_id INTEGER NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'compacted'
+);
