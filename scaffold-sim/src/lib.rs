@@ -81,6 +81,12 @@ impl SimulatedNetwork {
     }
 }
 
+impl Default for SimulatedNetwork {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct SimClient {
     pub id: String,
     pub doc: LoroDoc,
