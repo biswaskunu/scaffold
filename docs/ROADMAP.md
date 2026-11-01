@@ -65,7 +65,7 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
 ---
 
-## M4: Presence `[ ]`
+## M4: Presence `[x]`
 
 **Goal:** see other people.
 
@@ -74,9 +74,9 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 - Presence is never persisted
 
 **Acceptance**
-- [ ] Two tabs show each other's cursors and selected nodes
-- [ ] Closing a tab removes its presence within the timeout
-- [ ] Presence data does not appear in the document or database
+- [x] Two tabs show each other's cursors and selected nodes
+- [x] Closing a tab removes its presence within the timeout
+- [x] Presence data does not appear in the document or database
 
 ---
 
