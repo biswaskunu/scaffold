@@ -78,6 +78,13 @@ Template:
 - **Decision:** Use React with React Flow (xyflow) for the client web UI.
 - **Consequences:** Mature node-graph library with built-in node dragging, connection handles, and zoom/pan; highly reliable with coding agents; lets us focus on the Rust/CRDT sync experience rather than building canvas primitives from scratch.
 
+## ADR-010: Dedicated simulation workspace crate (`scaffold-sim`)
+- **Status:** accepted
+- **Date:** 2026-11-01
+- **Context:** M3 and M5 testing require simulating multi-client convergence, network partitions, dangling edge cleanup, and cycle detection without coupling graph logic to Axum servers or tokio runtimes.
+- **Decision:** Introduce a dedicated workspace crate `scaffold-sim` containing the network simulation harness and simulation test scenarios (such as Scenarios 2 and 3).
+- **Consequences:** Clean separation of concerns between pure graph logic, server persistence/sync, and network simulation harnesses. Reusable across property and partition tests.
+
 ---
 
 ## Open decisions

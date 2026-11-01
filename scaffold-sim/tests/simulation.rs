@@ -103,7 +103,7 @@ fn test_sim_scenario_2_dangling_edge_and_cleanup() {
 fn test_sim_scenario_3_cyclic_dependency_refusal() {
     let mut net = SimulatedNetwork::new();
     let mut client_a = SimClient::new("client_a");
-    let mut client_b = SimClient::new("client_b");
+    let client_b = SimClient::new("client_b");
 
     net.partition("client_a", "client_b");
 
@@ -126,7 +126,7 @@ fn test_sim_scenario_3_cyclic_dependency_refusal() {
     e2.insert("kind", "depends_on").unwrap();
 
     net.heal("client_a", "client_b");
-    let update_a = client_a.export_update();
+    let _update_a = client_a.export_update();
     let update_b = client_b.export_update();
 
     client_a.import_update(&update_b);
