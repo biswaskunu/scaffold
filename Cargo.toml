@@ -2,7 +2,7 @@
 members = [
   "scaffold-graph",
   "scaffold-ai",
-  "scaffold-server",
+  "scaffold-server", "scaffold-sim",
 ]
 
 [workspace.dependencies]
