@@ -36,7 +36,7 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
 ---
 
-## M2: Persistence `[ ]`
+## M2: Persistence `[x]`
 
 **Goal:** rooms survive restarts.
 
@@ -44,9 +44,9 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 - Load = latest snapshot + replay newer updates
 
 **Acceptance**
-- [ ] Restart test: edit, stop server, start server, state is identical
-- [ ] Compaction is atomic; killing the process mid-compaction loses nothing
-- [ ] Reloaded state after compaction equals pre-compaction state
+- [x] Restart test: edit, stop server, start server, state is identical
+- [x] Compaction is atomic; killing the process mid-compaction loses nothing
+- [x] Reloaded state after compaction equals pre-compaction state
 
 ---
 
