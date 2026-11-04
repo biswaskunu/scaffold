@@ -73,7 +73,7 @@ export function App() {
     const nextNodes: Node[] = [];
     for (const [id, val] of nodesMap.entries()) {
       if (!val || typeof val !== 'object') continue;
-      const data = val as any;
+      const data = val.toJSON ? val.toJSON() : val;
       nextNodes.push({
         id,
         type: 'default',
@@ -93,7 +93,7 @@ export function App() {
     const nextEdges: Edge[] = [];
     for (const [id, val] of edgesMap.entries()) {
       if (!val || typeof val !== 'object') continue;
-      const data = val as any;
+      const data = val.toJSON ? val.toJSON() : val;
       nextEdges.push({
         id,
         source: data.from,
