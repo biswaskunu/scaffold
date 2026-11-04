@@ -133,20 +133,14 @@ impl RoomManager {
         if room.doc.oplog_vv() != before {
             room.updates_since_compaction += 1;
             room.last_activity = Instant::now();
-            let seq = room
-                .doc
-                .oplog_vv()
-                .get_frontiers()
-                .iter()
-                .map(|f| f.counter as i64)
-                .sum::<i64>();
+            let seq = room.updates_since_compaction as i64;
 
             if let Some(ref store) = self.store {
                 let _ = store.append_update(id, bytes, seq).await;
             }
 
             if room.updates_since_compaction >= self.compact_after_updates {
-                let _ = self.compact_room_internal(id, &mut room).await;
+                self.compact_room_internal(id, &mut room).await?;
             }
 
             if let Some(delta) = room
@@ -170,13 +164,7 @@ impl RoomManager {
             return Ok(());
         };
 
-        let covered_seq = room
-            .doc
-            .oplog_vv()
-            .get_frontiers()
-            .iter()
-            .map(|f| f.counter as i64)
-            .sum::<i64>();
+        let covered_seq = room.updates_since_compaction as i64;
         let snapshot_data = room
             .doc
             .export(ExportMode::Snapshot)
