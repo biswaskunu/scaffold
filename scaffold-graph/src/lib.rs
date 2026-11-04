@@ -163,7 +163,7 @@ impl Graph {
             let edges = graph
                 .edges
                 .iter()
-                .filter(|e| e.from == graph.nodes[node_idx].id);
+                .filter(|e| e.from == graph.nodes[node_idx].id && e.kind == EdgeKind::DependsOn);
 
             for edge in edges {
                 let target_idx = match node_indices.get(&edge.to) {
@@ -234,12 +234,12 @@ impl Graph {
 
         for edge in &self.edges {
             if let EdgeKind::DependsOn = edge.kind {
-                if let Some(in_deg) = in_degree.get_mut(&edge.to) {
+                if let Some(in_deg) = in_degree.get_mut(&edge.from) {
                     *in_deg += 1;
                 }
-                adj.entry(edge.from.clone())
+                adj.entry(edge.to.clone())
                     .or_default()
-                    .push(edge.to.clone());
+                    .push(edge.from.clone());
             }
         }
 
@@ -472,7 +472,7 @@ mod tests {
         let order = g.topological_sort().unwrap();
         assert_eq!(
             order,
-            vec!["n1".to_string(), "n2".to_string(), "n3".to_string()]
+            vec!["n3".to_string(), "n2".to_string(), "n1".to_string()]
         );
     }
 
