@@ -606,10 +606,35 @@ mod tests {
 
         let canonical = built.graph.canonical();
         let json = serde_json::to_string_pretty(&canonical).unwrap();
-        // Golden check: nodes must be sorted by id ("alpha" before "beta")
-        let alpha_pos = json.find("alpha").unwrap();
-        let beta_pos = json.find("beta").unwrap();
-        assert!(alpha_pos < beta_pos);
+        // Exact expected JSON for canonical serialization:
+        // Nodes sorted by id, edges sorted by (kind, from, to)
+        let expected = r#"{
+  "nodes": [
+    {
+      "id": "alpha",
+      "type": "feature",
+      "title": "Alpha Feature",
+      "body": "Do alpha",
+      "effort": null
+    },
+    {
+      "id": "beta",
+      "type": "task",
+      "title": "Beta Task",
+      "body": "Do beta",
+      "effort": 5.0
+    }
+  ],
+  "edges": [
+    {
+      "kind": "depends_on",
+      "from": "alpha",
+      "to": "beta"
+    }
+  ]
+}"#;
+
+        assert_eq!(json, expected);
     }
 }
 
