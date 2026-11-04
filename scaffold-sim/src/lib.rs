@@ -95,12 +95,9 @@ pub struct SimClient {
 impl SimClient {
     pub fn new(id: &str) -> Self {
         let doc = LoroDoc::new();
-        let u = ulid::Ulid::gen();
-        let bytes = u.to_bytes();
-        let mut val = 0u64;
-        for &b in bytes.iter().take(8) {
-            val = (val << 8) | (b as u64);
-        }
+        // Use seeded random u64 for peer id instead of first 8 ULID bytes
+        // (which are mostly timestamp and can cause collisions)
+        let val: u64 = rand::random();
         doc.set_peer_id(val).unwrap();
         Self {
             id: id.to_string(),
