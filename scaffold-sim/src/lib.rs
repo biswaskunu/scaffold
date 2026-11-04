@@ -1,4 +1,4 @@
-use loro::LoroDoc;
+use loro::{LoroDoc, VersionVector};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 pub struct SimulatedNetwork {
@@ -90,6 +90,7 @@ impl Default for SimulatedNetwork {
 pub struct SimClient {
     pub id: String,
     pub doc: LoroDoc,
+    pub last_vv: VersionVector,
 }
 
 impl SimClient {
@@ -99,17 +100,20 @@ impl SimClient {
         // (which are mostly timestamp and can cause collisions)
         let val: u64 = rand::random();
         doc.set_peer_id(val).unwrap();
+        let last_vv = doc.oplog_vv();
         Self {
             id: id.to_string(),
             doc,
+            last_vv,
         }
     }
 
     pub fn export_update(&self) -> Vec<u8> {
-        self.doc.export(loro::ExportMode::Snapshot).unwrap()
+        self.doc.export(loro::ExportMode::updates(&self.last_vv)).unwrap()
     }
 
     pub fn import_update(&mut self, bytes: &[u8]) {
         self.doc.import(bytes).unwrap();
+        self.last_vv = self.doc.oplog_vv();
     }
 }
