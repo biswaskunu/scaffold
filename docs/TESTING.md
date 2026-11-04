@@ -81,6 +81,15 @@ Also test:
 - Component tests for node creation, edge drawing, and the proposal review panel.
 - One end-to-end smoke test (headless browser): two tabs, edit in each, assert both show the same graph, toggle offline in one and verify merge.
 
+
+
+## Scenarios 1, 4, and 5
+
+1. **Same-node different-field edits across a partition (Scenario 1):** Client A and B edit different fields of the same node while partitioned. After healing, both changes survive because Loro's mergeable maps handle field-level merging. This validates that the CRDT correctly handles concurrent field edits without conflicts.
+
+4. **Server restart mid-session (Scenario 4):** A client edits during an active session, the server restarts, and the client reconnects. The client should reload the latest state from the persisted SQLite state (latest snapshot + replayed updates) with no lost accepted updates. This tests the persistence and convergence guarantee.
+
+5. **Long offline edit followed by reload (Scenario 5):** A client edits offline for an extended period, then reloads the room document from IndexedDB while still offline, then reconnects to the server. The local state should merge with the server's state upon reconnection, demonstrating that IndexedDB persistence combined with CRDT convergence works across extended offline periods.
 ## CI expectations
 
 On every PR: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test --workspace`, client typecheck and lint, and the client test suite. Long-running simulation seeds can run on a nightly schedule with more iterations.
