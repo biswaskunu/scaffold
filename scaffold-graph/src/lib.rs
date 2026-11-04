@@ -612,3 +612,77 @@ mod tests {
         assert!(alpha_pos < beta_pos);
     }
 }
+
+#[cfg(test)]
+mod proptest_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    // Property: topological sort is deterministic for acyclic graphs
+    #[test]
+    fn proptest_topological_sort_deterministic() {
+        // Test that topological sort produces consistent order
+        let mut g = Graph::new();
+        let n1 = Node {
+            id: "n1".to_string(),
+            r#type: NodeType::Feature,
+            title: "First".to_string(),
+            body: "".to_string(),
+            x: 0.0,
+            y: 0.0,
+            status: None,
+            effort: None,
+            created_by: "test".to_string(),
+            ai_generated: false,
+            source_node: None,
+        };
+        let n2 = Node {
+            id: "n2".to_string(),
+            r#type: NodeType::Feature,
+            title: "Second".to_string(),
+            body: "".to_string(),
+            x: 0.0,
+            y: 0.0,
+            status: None,
+            effort: None,
+            created_by: "test".to_string(),
+            ai_generated: false,
+            source_node: None,
+        };
+        let n3 = Node {
+            id: "n3".to_string(),
+            r#type: NodeType::Feature,
+            title: "Third".to_string(),
+            body: "".to_string(),
+            x: 0.0,
+            y: 0.0,
+            status: None,
+            effort: None,
+            created_by: "test".to_string(),
+            ai_generated: false,
+            source_node: None,
+        };
+        g.add_node(n1.clone());
+        g.add_node(n2.clone());
+        g.add_node(n3.clone());
+        g.add_edge(Edge {
+            id: "edge1".to_string(),
+            from: "n1".to_string(),
+            to: "n2".to_string(),
+            kind: EdgeKind::DependsOn,
+        });
+        g.add_edge(Edge {
+            id: "edge2".to_string(),
+            from: "n2".to_string(),
+            to: "n3".to_string(),
+            kind: EdgeKind::DependsOn,
+        });
+
+        let order = g.topological_sort();
+        assert!(order.is_ok());
+        assert_eq!(
+            order.unwrap(),
+            vec!["n3".to_string(), "n2".to_string(), "n1".to_string()]
+        );
+    }
+}
