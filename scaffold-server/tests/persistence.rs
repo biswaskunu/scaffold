@@ -33,7 +33,6 @@ async fn test_persistence_restart_and_reload() {
     let rooms2 = RoomManager::new(Some(store2));
 
     let json_after = rooms2.state_json("room-1").await.unwrap();
-
     assert_eq!(json_before, json_after);
     assert_eq!(json_after, serde_json::json!({"root": {"key1": "value1"}}));
 }
@@ -64,10 +63,11 @@ async fn test_presence_does_not_touch_sqlite() {
     drop(room_guard);
 
     // Verify room_updates table in SQLite is completely empty
-    let row_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM room_updates WHERE room_id = 'room-presence'")
-        .fetch_one(&store.pool)
-        .await
-        .unwrap();
+    let row_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM room_updates WHERE room_id = 'room-presence'")
+            .fetch_one(&store.pool)
+            .await
+            .unwrap();
 
     assert_eq!(row_count, 0);
 }

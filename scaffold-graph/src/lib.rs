@@ -55,9 +55,17 @@ pub struct Graph {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum GraphWarning {
-    DanglingEdge { edge_id: String, missing_node: String },
-    SelfEdge { edge_id: String },
-    DuplicateEdge { kept: String, dropped: String },
+    DanglingEdge {
+        edge_id: String,
+        missing_node: String,
+    },
+    SelfEdge {
+        edge_id: String,
+    },
+    DuplicateEdge {
+        kept: String,
+        dropped: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -182,7 +190,7 @@ impl Graph {
                         path,
                     );
                 } else if rec_stack[target_idx] {
-                    // Found a cycle - extract it from path
+                    // Found a cycle - extract it from path including edge.to
                     let mut cycle: Vec<String> = Vec::new();
                     let mut found = false;
                     for node_id in path.iter() {
@@ -191,6 +199,7 @@ impl Graph {
                         }
                         if node_id == &edge.to {
                             found = true;
+                            cycle.push(node_id.clone());
                         }
                     }
                     if !cycle.is_empty() {
@@ -595,14 +604,15 @@ mod tests {
             ai_generated: false,
             source_node: None,
         };
-        let built = Graph::build(vec![n1, n2], vec![
-            Edge {
+        let built = Graph::build(
+            vec![n1, n2],
+            vec![Edge {
                 id: "e1".to_string(),
                 from: "alpha".to_string(),
                 to: "beta".to_string(),
                 kind: EdgeKind::DependsOn,
-            }
-        ]);
+            }],
+        );
 
         let canonical = built.graph.canonical();
         let json = serde_json::to_string_pretty(&canonical).unwrap();

@@ -17,8 +17,8 @@ Scaffold is a high-performance collaborative graph architecture built in Rust, u
 - **Test Status**: All 2 unit tests pass successfully.
 
 ### 3. `scaffold-server`
-- **Sync Protocol**: Implements binary WebSocket frames (`Hello`, `Sync`, `Update`, `Ack`, `Presence`, `Error`).
-- **Room Management**: Maintains shared CRDT documents per room with concurrent update convergence, late-joiner state transfer, and heartbeat/presence tracking.
+- **Sync Protocol**: Implements binary WebSocket frames (`Hello`, `Sync`, `Update`, `Presence`, `Error`).
+- **Room Management**: Maintains shared CRDT documents per room with concurrent update convergence and late-joiner state transfer. Presence is ephemeral and never persisted.
 - **Persistence & Compaction**: SQLite-backed state snapshots, incremental update appending, and background compaction preserving document roots.
 - **Test Status**: 4 unit tests, 3 persistence tests, and 3 sync integration tests pass successfully.
 

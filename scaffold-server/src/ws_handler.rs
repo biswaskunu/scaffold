@@ -155,7 +155,9 @@ pub async fn ws_handler(mut socket: WebSocket, rooms: RoomManager) {
                     }
                     ClientMessage::Presence(state) => {
                         let room = room.lock().await;
-                        if let Ok(frame) = sync_protocol::encode_presence(&connection_id.to_string(), &state) {
+                        if let Ok(frame) =
+                            sync_protocol::encode_presence(&connection_id.to_string(), &state)
+                        {
                             let _ = room.presence_updates.send((connection_id, frame));
                         }
                     }

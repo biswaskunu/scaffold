@@ -72,7 +72,9 @@ pub fn decode_client(bytes: &[u8]) -> Result<ClientMessage, FrameError> {
     match bytes[0] {
         HELLO => Ok(ClientMessage::Hello(serde_json::from_slice(&bytes[1..])?)),
         UPDATE => Ok(ClientMessage::Update(bytes[1..].to_vec())),
-        PRESENCE => Ok(ClientMessage::Presence(serde_json::from_slice(&bytes[1..])?)),
+        PRESENCE => Ok(ClientMessage::Presence(serde_json::from_slice(
+            &bytes[1..],
+        )?)),
         SYNC_REPLY | ERROR => Err(FrameError::WrongDirection),
         other => Err(FrameError::UnknownType(other)),
     }
@@ -93,14 +95,23 @@ pub fn encode_update(update: &[u8]) -> Vec<u8> {
     frame
 }
 
-pub fn encode_presence(connection_id: &str, presence: &PresenceState) -> Result<Vec<u8>, serde_json::Error> {
+pub fn encode_presence(
+    connection_id: &str,
+    presence: &PresenceState,
+) -> Result<Vec<u8>, serde_json::Error> {
     #[derive(Serialize)]
     struct TaggedPresence<'a> {
         connection_id: &'a str,
         #[serde(flatten)]
         presence: &'a PresenceState,
     }
-    encode_json(PRESENCE, &TaggedPresence { connection_id, presence })
+    encode_json(
+        PRESENCE,
+        &TaggedPresence {
+            connection_id,
+            presence,
+        },
+    )
 }
 
 pub fn encode_peer_left(connection_id: &str) -> Result<Vec<u8>, serde_json::Error> {

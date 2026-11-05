@@ -13,6 +13,7 @@ pub struct Room {
     pub version: VersionVector,
     pub updates_since_compaction: usize,
     pub last_activity: Instant,
+    pub base_sequence: i64,
 }
 
 impl Room {
@@ -26,6 +27,7 @@ impl Room {
             version: VersionVector::default(),
             updates_since_compaction: 0,
             last_activity: Instant::now(),
+            base_sequence: 0,
         }
     }
 
@@ -133,7 +135,7 @@ impl RoomManager {
         if room.doc.oplog_vv() != before {
             room.updates_since_compaction += 1;
             room.last_activity = Instant::now();
-            let seq = room.updates_since_compaction as i64;
+            let seq = room.base_sequence + room.updates_since_compaction as i64;
 
             if let Some(ref store) = self.store {
                 let _ = store.append_update(id, bytes, seq).await;
@@ -176,6 +178,7 @@ impl RoomManager {
             .map_err(|e| e.to_string())?;
 
         room.updates_since_compaction = 0;
+        room.base_sequence = covered_seq + 1;
         Ok(())
     }
 

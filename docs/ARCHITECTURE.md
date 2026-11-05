@@ -59,7 +59,7 @@ Binary WebSocket frames. First byte is the message type.
 | `0x04 Presence` | both | ephemeral presence payload (cursor, selection, name, color) |
 | `0x05 Error` | S → C | UTF-8 JSON: `{ code: string, message: string }` |
 
-Every frame begins with the one-byte type tag. Control payloads are JSON. The current maximum frame is 1 MiB. `Hello` is the first client frame and includes the room id (the URL room id is currently informational); server protocol version is `1`. A late joiner sends an empty version vector and receives the entire update history in `SyncReply`. In steady state the server exports changes since its last room broadcast and relays each delta to all connected peers, including the originating peer. If a receiver falls behind the bounded room broadcast channel, it receives `resync_required` and reconnects for a complete delta.
+Every frame begins with the one-byte type tag. Control payloads are JSON. The current maximum frame is 1 MiB. `Hello` is the first client frame and includes the room id (the URL room id is currently informational); server protocol version is `1`. A late joiner sends an empty version vector and receives the entire update history in `SyncReply`. In steady state the server exports changes since its last room broadcast and relays each delta to all connected peers. If a receiver falls behind the bounded room broadcast channel, it receives `resync_required` and reconnects for a complete delta. The server does not relay updates back to the originating client.
 
 Flow:
 1. Client connects to `/ws/:room_id` and sends `Hello` with its version vector.

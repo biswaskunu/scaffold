@@ -39,8 +39,14 @@ impl SimulatedNetwork {
     }
 
     pub fn partition(&mut self, client_a: &str, client_b: &str) {
-        self.partitions.entry(client_a.to_string()).or_default().insert(client_b.to_string());
-        self.partitions.entry(client_b.to_string()).or_default().insert(client_a.to_string());
+        self.partitions
+            .entry(client_a.to_string())
+            .or_default()
+            .insert(client_b.to_string());
+        self.partitions
+            .entry(client_b.to_string())
+            .or_default()
+            .insert(client_a.to_string());
     }
 
     pub fn heal(&mut self, client_a: &str, client_b: &str) {
@@ -109,7 +115,9 @@ impl SimClient {
     }
 
     pub fn export_update(&self) -> Vec<u8> {
-        self.doc.export(loro::ExportMode::updates(&self.last_vv)).unwrap()
+        self.doc
+            .export(loro::ExportMode::updates(&self.last_vv))
+            .unwrap()
     }
 
     pub fn import_update(&mut self, bytes: &[u8]) {

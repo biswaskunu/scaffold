@@ -16,7 +16,7 @@ thiserror = "1.0"
 futures-util = "0.3"
 chrono = "0.4"
 anyhow = "1.0"
-loro = "1.0.0"
+loro = "1.17.1"
 
 [dev-dependencies]
 tokio-tungstenite = "0.24"

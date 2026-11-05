@@ -236,7 +236,6 @@ export function App() {
         if (event.by === 'local') {
           const update = docRef.current.export({ mode: 'update', from: lastPersistedVersionRef.current });
           persistAndPush(update, 'local');
-          lastSyncedVersionRef.current = docRef.current.oplogVersion();
         }
         syncDocToState();
       });
