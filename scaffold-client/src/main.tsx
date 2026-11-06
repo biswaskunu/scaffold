@@ -73,19 +73,19 @@ export function App() {
     const nextNodes: Node[] = [];
     for (const [id, val] of nodesMap.entries()) {
       if (!val || typeof val !== 'object') continue;
-      const data = val.toJSON ? val.toJSON() : val;
+      const data = 'toJSON' in val ? (val as { toJSON: () => any }).toJSON() : val;
       nextNodes.push({
         id,
         type: 'default',
-        position: { x: data.x ?? 100, y: data.y ?? 100 },
+        position: { x: (data as { x?: number }).x ?? 100, y: (data as { y?: number }).y ?? 100 },
         data: {
-          label: data.title || 'Untitled',
-          type: data.type || 'feature',
-          body: data.body || '',
-          status: data.status || 'todo',
-          effort: data.effort ?? null,
-          ai_generated: data.ai_generated ?? false,
-          source_node: data.source_node ?? null,
+          label: (data as { title?: string }).title || 'Untitled',
+          type: (data as { type?: string }).type || 'feature',
+          body: (data as { body?: string }).body || '',
+          status: (data as { status?: string }).status || 'todo',
+          effort: (data as { effort?: number | null }).effort ?? null,
+          ai_generated: (data as { ai_generated?: boolean }).ai_generated ?? false,
+          source_node: (data as { source_node?: string }).source_node ?? null,
         },
       });
     }
@@ -93,13 +93,13 @@ export function App() {
     const nextEdges: Edge[] = [];
     for (const [id, val] of edgesMap.entries()) {
       if (!val || typeof val !== 'object') continue;
-      const data = val.toJSON ? val.toJSON() : val;
+      const data = 'toJSON' in val ? (val as { toJSON: () => any }).toJSON() : val;
       nextEdges.push({
         id,
-        source: data.from,
-        target: data.to,
-        label: data.kind || 'depends_on',
-        animated: data.kind === 'depends_on',
+        source: (data as { from?: string }).from || '',
+        target: (data as { to?: string }).to || '',
+        label: (data as { kind?: string }).kind || 'depends_on',
+        animated: (data as { kind?: string }).kind === 'depends_on',
       });
     }
 
