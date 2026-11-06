@@ -63,11 +63,10 @@ async fn test_presence_does_not_touch_sqlite() {
     drop(room_guard);
 
     // Verify room_updates table in SQLite is completely empty
-    let row_count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM room_updates WHERE room_id = 'room-presence'")
-            .fetch_one(&store.pool)
-            .await
-            .unwrap();
+    let row_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM room_updates WHERE room_id = 'room-presence'")
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
 
     assert_eq!(row_count, 0);
 }
@@ -104,4 +103,47 @@ async fn test_compaction_and_reload() {
     let json_after = rooms2.state_json("room-2").await.unwrap();
     assert_eq!(json_before, json_after);
     assert_eq!(json_after, serde_json::json!({"root": {"item": "100"}}));
+}
+
+#[tokio::test]
+async fn test_persistence_restart_mid_session() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("restart.db");
+    let database_url = format!("sqlite://{}", db_path.display());
+
+    let store = Store::new(&database_url).await.unwrap();
+    let rooms = RoomManager::new(Some(store));
+
+    let room = rooms.get_or_create("room-restart").await;
+    let _ = room.lock().await;
+    let doc = LoroDoc::new();
+    doc.set_peer_id(1).unwrap();
+    doc.get_map("root").insert("key1", "value1").unwrap();
+    let bytes = doc
+        .export(ExportMode::updates(&VersionVector::default()))
+        .unwrap();
+    rooms.apply_update("room-restart", 1, &bytes).await.unwrap();
+
+    // Make many updates to trigger compaction (simulating mid-session edits)
+    for i in 2..501 {
+        let doc = LoroDoc::new();
+        doc.set_peer_id(i as u64);
+        doc.get_map("root").insert("key", format!("value{}", i)).unwrap();
+        let bytes = doc
+            .export(ExportMode::updates(&VersionVector::default()))
+            .unwrap();
+        rooms.apply_update("room-restart", i as u64, &bytes).await.unwrap();
+    }
+
+    // Trigger compaction by checking the state
+    let json_before = rooms.state_json("room-restart").await.unwrap();
+
+    // Simulate server restart: drop and recreate room manager with same store
+    drop(rooms);
+
+    let store2 = Store::new(&database_url).await.unwrap();
+    let rooms2 = RoomManager::new(Some(store2));
+
+    let json_after = rooms2.state_json("room-restart").await.unwrap();
+    assert_eq!(json_before, json_after);
 }

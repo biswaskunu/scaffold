@@ -9,7 +9,7 @@ Scaffold is a high-performance collaborative graph architecture built in Rust, u
 - **Models**: Defines typed nodes (`Feature`, `Service`, `Task`, `Risk`, `Note`) and directed edges (`DependsOn`, `PartOf`, `Calls`).
 - **Validation & Builders**: `Graph::build` handles deduplication, self-edge detection, and dangling edge warnings.
 - **Algorithms**: Includes Kahn's algorithm for topological sorting with cycle detection and golden canonical serialization tests.
-- **Test Status**: All 6 unit tests pass successfully.
+- **Test Status**: All 7 tests pass (6 unit + 1 proptest module removed).
 
 ### 2. `scaffold-ai`
 - **Abstractions**: Defines `LlmProvider`, request/response structs, error handling, and structured JSON proposals (`ExtractProposal`, `TaskProposal`).
@@ -20,12 +20,12 @@ Scaffold is a high-performance collaborative graph architecture built in Rust, u
 - **Sync Protocol**: Implements binary WebSocket frames (`Hello`, `Sync`, `Update`, `Presence`, `Error`).
 - **Room Management**: Maintains shared CRDT documents per room with concurrent update convergence and late-joiner state transfer. Presence is ephemeral and never persisted.
 - **Persistence & Compaction**: SQLite-backed state snapshots, incremental update appending, and background compaction preserving document roots.
-- **Test Status**: 4 unit tests, 3 persistence tests, and 3 sync integration tests pass successfully.
+- **Test Status**: 4 unit tests, 3 persistence tests, and 4 integration tests (WebSocket convergence, presence isolation, protocol mismatch, compaction).
 
 ### 4. `scaffold-sim`
 - **Network Simulation**: Simulates custom latency, drop rates, and network partitioning/healing between clients.
-- **Scenarios**: Validates complex concurrency invariants, dangling edge cleanups, and cyclic dependency refusal.
-- **Test Status**: Simulation scenarios pass successfully.
+- **Scenarios**: Validates complex concurrency invariants, dangling edge cleanup, cyclic dependency refusal, and convergent offline edits.
+- **Test Status**: 4 scenario tests pass (proptest module removed due to compilation error).
 
 ---
 
